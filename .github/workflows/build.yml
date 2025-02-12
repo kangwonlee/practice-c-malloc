@@ -29,8 +29,56 @@ jobs:
       if: always() # Run even if tests fail (for debugging)
       run: valgrind --leak-check=full ./test_pointers
 
+    - name: AI Tutor in English
+      uses: kangwonlee/gemini-python-tutor@main
+      with:
+        report-files: test_results.json
+        student-files: src/main.c,src/pointers.c,include/pointers.h
+        readme-path: README.md
+        api-key: ${{ secrets.GOOGLE_API_KEY }}
+        explanation-in: English
+      id: ai-tutor-English
+      if: always()
+      timeout-minutes: 2
+
+    - name: AI Tutor in Swedish
+      uses: kangwonlee/gemini-python-tutor@main
+      with:
+        report-files: test_results.json
+        student-files: src/main.c,src/pointers.c,include/pointers.h
+        readme-path: README.md
+        api-key: ${{ secrets.GOOGLE_API_KEY }}
+        explanation-in: Swedish
+      id: ai-tutor-Swedish
+      if: always()
+      timeout-minutes: 2
+
+    - name: AI Tutor in German
+      uses: kangwonlee/gemini-python-tutor@main
+      with:
+        report-files: test_results.json
+        student-files: src/main.c,src/pointers.c,include/pointers.h
+        readme-path: README.md
+        api-key: ${{ secrets.GOOGLE_API_KEY }}
+        explanation-in: German
+      id: ai-tutor-German
+      if: always()
+      timeout-minutes: 2
+
+    - name: AI Tutor in Korean
+      uses: kangwonlee/gemini-python-tutor@main
+      with:
+        report-files: test_results.json
+        student-files: src/main.c,src/pointers.c,include/pointers.h
+        readme-path: README.md
+        api-key: ${{ secrets.GOOGLE_API_KEY }}
+        explanation-in: Korean
+      id: ai-tutor-Korean
+      if: always()
+      timeout-minutes: 2
+
     - name: Upload Test Report
       uses: actions/upload-artifact@v4
       with:
         name: test-report
-        path: test_report.json
+        path: test_results.json
