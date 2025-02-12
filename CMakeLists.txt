@@ -14,7 +14,7 @@ target_include_directories(pointers PUBLIC include)
 
 # Create the tests
 add_executable(test_pointers test/test_pointers.c)
-target_link_libraries(test_pointers pointers Criterion::Criterion) # Link using the target
+target_link_libraries(test_pointers pointers ${Criterion_LIBRARIES}) # Link using the target
 
 # Example executable (optional)
 add_executable(example src/main.c)
