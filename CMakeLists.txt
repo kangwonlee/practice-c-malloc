@@ -17,5 +17,5 @@ add_executable(test_pointers test/test_pointers.c)
 target_link_libraries(test_pointers pointers Criterion::Criterion) # Link using the target
 
 # Example executable (optional)
-add_executable(example examples/main.c)
+add_executable(example src/main.c)
 target_link_libraries(example pointers)
