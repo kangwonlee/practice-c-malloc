@@ -16,6 +16,9 @@ jobs:
     - name: Install Criterion
       run: sudo apt-get update && sudo apt-get install -y libcriterion-dev pkg-config valgrind
 
+    - name: Install tap2json
+      run: npm install -g tap2json
+
     - name: Build
       run: cmake . -DCMAKE_BUILD_TYPE=Debug && make  # Add build type
 
