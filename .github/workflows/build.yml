@@ -23,6 +23,7 @@ jobs:
       run: ./test_pointers --tap > test_results.tap
 
     - name: Convert to JSON
+      if: always()
       run: tap2json test_results.tap > test_results.json
 
     - name: Check for Memory Leaks (Optional - using valgrind)
@@ -79,6 +80,7 @@ jobs:
 
     - name: Upload Test Report
       uses: actions/upload-artifact@v4
+      if: always()
       with:
         name: test-report
         path: test_results.json
