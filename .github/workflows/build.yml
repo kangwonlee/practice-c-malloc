@@ -20,8 +20,17 @@ jobs:
       run: cmake . -DCMAKE_BUILD_TYPE=Debug && make  # Add build type
 
     - name: Run Tests
-      run: ./test_pointers
+      run: ./test_pointers --tap > test_results.tap
+
+    - name: Convert to JSON
+      run: tap2json test_results.tap > test_results.json
 
     - name: Check for Memory Leaks (Optional - using valgrind)
       if: always() # Run even if tests fail (for debugging)
       run: valgrind --leak-check=full ./test_pointers
+
+    - name: Upload Test Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-report
+        path: test_report.json
