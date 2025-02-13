@@ -16,7 +16,10 @@ target_link_libraries(my_tests
 )
 
 # Use the variable defined in the root CMakeLists.txt
-target_include_directories(my_tests PRIVATE ${PROJECT_INCLUDE_DIR})
+target_include_directories(my_tests PRIVATE 
+    ${PROJECT_INCLUDE_DIR}
+    ${CMocka_INCLUDE_DIRS}  # Add CMocka include directories
+)
 
 # Add a custom command to run the tests and capture output.
 add_test(NAME run_tests COMMAND my_tests)
