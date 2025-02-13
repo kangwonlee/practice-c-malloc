@@ -16,8 +16,8 @@ jobs:
     - name: Install Criterion
       run: sudo apt-get update && sudo apt-get install -y libcriterion-dev pkg-config valgrind
 
-    - name: Install tap2json
-      run: npm install -g tap2json
+    - name: Install test-tap
+      run: npm install -g test-tap
 
     - name: Build
       run: cmake . -DCMAKE_BUILD_TYPE=Debug && make  # Add build type
@@ -27,7 +27,7 @@ jobs:
 
     - name: Convert to JSON
       if: always()
-      run: tap2json test_results.tap > test_results.json
+      run: tap-to-json test_results.tap > test_results.json
 
     - name: Check for Memory Leaks (Optional - using valgrind)
       if: always() # Run even if tests fail (for debugging)
