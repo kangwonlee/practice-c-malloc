@@ -7,5 +7,8 @@ project(MyProject C)
 include_directories(/usr/local/include/jansson)  # Adjust path as needed
 link_directories(/usr/local/lib) # Adjust as needed
 
+# Define a variable for the include directory.  This is the key change.
+set(PROJECT_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
+
 add_subdirectory(src)
 add_subdirectory(test)

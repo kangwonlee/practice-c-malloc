@@ -1,4 +1,4 @@
-# Find CMocka.  You'll need CMocka installed.
+# test/CMakeLists.txt
 find_package(CMocka REQUIRED)
 
 add_executable(my_tests test_pointers.c)
@@ -9,6 +9,9 @@ target_link_libraries(my_tests
     jansson
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/pointers.c  # Link directly to source
 )
+
+# Use the variable defined in the root CMakeLists.txt
+target_include_directories(my_tests PRIVATE ${PROJECT_INCLUDE_DIR})
 
 # Add a custom command to run the tests and capture output.
 add_test(NAME run_tests COMMAND my_tests)
