@@ -39,7 +39,9 @@ void *__wrap_malloc(size_t size) {
 typedef struct {
     const char *name;
     int status;
+    CMUnitTestFunction test_func; // Store the original test function here
 } TestResult;
+
 
 void generate_json_report(TestResult *results, size_t num_tests) {
     json_t *root = json_object();
@@ -59,36 +61,15 @@ void generate_json_report(TestResult *results, size_t num_tests) {
     json_decref(root);
 }
 
-// Wrapper function (Corrected Signature)
+
+// Wrapper function (Corrected)
 static void test_wrapper(void **state) {
     TestResult *test_result = (TestResult *)*state;
-    int result;
-
-    // Find the original test function based on the name
-    const struct CMUnitTest *tests[] = {
-        cmocka_unit_test(test_allocate_integer_success),
-        cmocka_unit_test(test_allocate_integer_failure),
-        cmocka_unit_test(test_deallocate_integer),
-    };
-    size_t num_tests = sizeof(tests) / sizeof(tests[0]);
-    CMUnitTestFunction original_test_func = NULL;
-
-     for (size_t i = 0; i < num_tests; i++) {
-        if (strcmp(tests[i]->name, test_result->name) == 0) {
-            original_test_func = tests[i]->test_func;
-            break;
-        }
-    }
-
-    if (original_test_func) {
-        result = original_test_func(state); // Call original with correct signature
-    }
-    else
-    {
-        result = -1; //Indicate that the test was not found.
-    }
+    // Now we can call the test function directly from the TestResult struct
+    int result = test_result->test_func(state);
     test_result->status = result;
 }
+
 
 int main(void) {
     TestResult test_results[3];
@@ -99,12 +80,20 @@ int main(void) {
         cmocka_unit_test_prestate(test_deallocate_integer,       &test_results[2]),
     };
 
-    // Set test names
+    // Set test names AND function pointers
     for (size_t i = 0; i < sizeof(tests) / sizeof(tests[0]); i++) {
         test_results[i].name = tests[i].name;
+        test_results[i].test_func = tests[i].test_func; // Store the function pointer!
     }
-   
-    int num_tests_run = cmocka_run_group_tests(tests, NULL, NULL);
+
+    // Use the original tests array, but with our prestate
+      const struct CMUnitTest wrapped_tests[] = {
+        cmocka_unit_test_prestate(test_wrapper, &test_results[0]),
+        cmocka_unit_test_prestate(test_wrapper, &test_results[1]),
+        cmocka_unit_test_prestate(test_wrapper, &test_results[2]),
+    };
+
+    int num_tests_run = cmocka_run_group_tests(wrapped_tests, NULL, NULL);
 
     generate_json_report(test_results, sizeof(test_results) / sizeof(test_results[0]));
 
