@@ -13,23 +13,18 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install Criterion
-      run: sudo apt-get update && sudo apt-get install -y libcriterion-dev pkg-config valgrind
+    - name: Install Dependencies (CMocka and Jansson)
+      run: sudo apt-get update && sudo apt-get install -y libcmocka-dev libjansson-dev pkg-config valgrind
 
     - name: Build
-      run: cmake . -DCMAKE_BUILD_TYPE=Debug && make  # Add build type
+      run: cmake . -DCMAKE_BUILD_TYPE=Debug && make
 
     - name: Run Tests
-      run: ./test_pointers --tap > test_results.tap
-
-    - name: Convert to JSON
-      if: always()
-      run: |
-        . ./jq-tap-2-json.sh test_results.tap > test_results.json
+      run: ./test/my_tests > test_results.json  # Direct JSON output from the test executable
 
     - name: Check for Memory Leaks (Optional - using valgrind)
       if: always() # Run even if tests fail (for debugging)
-      run: valgrind --leak-check=full ./test_pointers
+      run: valgrind --leak-check=full ./test/my_tests
 
     - name: AI Tutor in English
       uses: kangwonlee/gemini-python-tutor@main
@@ -84,6 +79,4 @@ jobs:
       if: always()
       with:
         name: test-report
-        path: |
-          test_results.tap
-          test_results.json
+        path: test_results.json
