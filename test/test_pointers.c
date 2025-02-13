@@ -39,9 +39,8 @@ void *__wrap_malloc(size_t size) {
 typedef struct {
     const char *name;
     int status;
-    CMUnitTestFunction test_func; // Store the original test function here
+    CMUnitTestFunction test_func; // Store the original test function
 } TestResult;
-
 
 void generate_json_report(TestResult *results, size_t num_tests) {
     json_t *root = json_object();
@@ -61,40 +60,36 @@ void generate_json_report(TestResult *results, size_t num_tests) {
     json_decref(root);
 }
 
-
 // Wrapper function (Corrected)
 static void test_wrapper(void **state) {
     TestResult *test_result = (TestResult *)*state;
-    // Now we can call the test function directly from the TestResult struct
-    int result = test_result->test_func(state);
-    test_result->status = result;
+    test_result->test_func(state); // Call the original test function
+    // CMocka's assert functions set a global state on failure.  We check that.
+    test_result->status = (cmocka_test_state_failed()) ? 1 : 0;
 }
-
 
 int main(void) {
     TestResult test_results[3];
 
     const struct CMUnitTest tests[] = {
-        cmocka_unit_test_prestate(test_allocate_integer_success, &test_results[0]),
-        cmocka_unit_test_prestate(test_allocate_integer_failure,  &test_results[1]),
-        cmocka_unit_test_prestate(test_deallocate_integer,       &test_results[2]),
+        cmocka_unit_test(test_allocate_integer_success),
+        cmocka_unit_test(test_allocate_integer_failure),
+        cmocka_unit_test(test_deallocate_integer),
     };
 
     // Set test names AND function pointers
     for (size_t i = 0; i < sizeof(tests) / sizeof(tests[0]); i++) {
         test_results[i].name = tests[i].name;
-        test_results[i].test_func = tests[i].test_func; // Store the function pointer!
+        test_results[i].test_func = tests[i].test_func;
     }
 
-    // Use the original tests array, but with our prestate
-      const struct CMUnitTest wrapped_tests[] = {
+    const struct CMUnitTest wrapped_tests[] = {
         cmocka_unit_test_prestate(test_wrapper, &test_results[0]),
         cmocka_unit_test_prestate(test_wrapper, &test_results[1]),
         cmocka_unit_test_prestate(test_wrapper, &test_results[2]),
     };
 
     int num_tests_run = cmocka_run_group_tests(wrapped_tests, NULL, NULL);
-
     generate_json_report(test_results, sizeof(test_results) / sizeof(test_results[0]));
 
     return num_tests_run;
