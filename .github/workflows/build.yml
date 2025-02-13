@@ -22,13 +22,10 @@ jobs:
     - name: Run Tests
       run: ./test_pointers --tap > test_results.tap
 
-    - name: Install test-tap
-      if: always()
-      run: npm install -g test-tap
-
     - name: Convert to JSON
       if: always()
-      run: tap-to-json test_results.tap > test_results.json
+      run: |
+        . ./jq-tap-2-json.sh test_results.tap > test_results.json
 
     - name: Check for Memory Leaks (Optional - using valgrind)
       if: always() # Run even if tests fail (for debugging)
