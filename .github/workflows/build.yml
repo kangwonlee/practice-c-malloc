@@ -16,14 +16,14 @@ jobs:
     - name: Install Criterion
       run: sudo apt-get update && sudo apt-get install -y libcriterion-dev pkg-config valgrind
 
-    - name: Install test-tap
-      run: npm install -g test-tap
-
     - name: Build
       run: cmake . -DCMAKE_BUILD_TYPE=Debug && make  # Add build type
 
     - name: Run Tests
       run: ./test_pointers --tap > test_results.tap
+
+    - name: Install test-tap
+      run: npm install -g test-tap
 
     - name: Convert to JSON
       if: always()
