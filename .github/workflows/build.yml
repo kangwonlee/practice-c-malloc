@@ -83,4 +83,6 @@ jobs:
       if: always()
       with:
         name: test-report
-        path: test_results.json
+        path: |
+          test_results.tap
+          test_results.json
