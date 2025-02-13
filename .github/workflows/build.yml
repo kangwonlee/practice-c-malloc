@@ -23,6 +23,7 @@ jobs:
       run: ./test_pointers --tap > test_results.tap
 
     - name: Install test-tap
+      if: always()
       run: npm install -g test-tap
 
     - name: Convert to JSON
