@@ -46,53 +46,72 @@ void *__wrap_malloc(size_t size) {
     return (void *)mock(); // mock() returns the value set by will_return()
 }
 
-// --- JSON Report Generation ---
-// This is a very simplified example. A real-world implementation would
-// be more robust and handle errors more gracefully.
-void generate_json_report(const struct CMUnitTest *tests, size_t num_tests) {
+// --- JSON Report Generation (Corrected) ---
+
+// Structure to hold test results
+typedef struct {
+    const char *name;
+    int status;  // 0 for pass, non-zero for fail
+} TestResult;
+
+
+void generate_json_report(TestResult *results, size_t num_tests) {
     json_t *root = json_object();
-    json_t *results = json_array();
+    json_t *json_results = json_array();
 
     for (size_t i = 0; i < num_tests; i++) {
         json_t *test_result = json_object();
-        json_object_set_new(test_result, "name", json_string(tests[i].name));
-
-        // Get the test state (passed/failed). This requires some CMocka internals.
-        // This part might need adjustments depending on CMocka version.
-        // The _cmocka_run_group_tests function sets up the test environment.
-        // We need to dig into that to get the result.  This is the trickiest
-        // part of the JSON reporting.
-        int status = tests[i].function(NULL);  // Simplified way to get result for demonstration
-
-        json_object_set_new(test_result, "status", json_string(status == 0 ? "passed" : "failed"));
-        json_array_append_new(results, test_result);
+        json_object_set_new(test_result, "name", json_string(results[i].name));
+        json_object_set_new(test_result, "status", json_string(results[i].status == 0 ? "passed" : "failed"));
+        json_array_append_new(json_results, test_result);
     }
 
-    json_object_set_new(root, "results", results);
+    json_object_set_new(root, "results", json_results);
 
-    // Dump the JSON to a string and print it (or save to a file)
-    char *json_str = json_dumps(root, JSON_INDENT(4)); // Pretty-print
+    char *json_str = json_dumps(root, JSON_INDENT(4));
     printf("%s\n", json_str);
 
-    // Clean up
     free(json_str);
     json_decref(root);
 }
 
+// Wrapper function to capture test results
+static int test_wrapper(void **state, const struct CMUnitTest *test) {
+    int result = test->test_func(state); // Call the actual test function
+    TestResult *test_result = (TestResult *)*state;
+    test_result->status = result; // Store the result
+    return result;
+}
+
 
 int main(void) {
-    const struct CMUnitTest tests[] = {
-        cmocka_unit_test(test_allocate_integer_success),
-        cmocka_unit_test(test_allocate_integer_failure),
-        cmocka_unit_test(test_deallocate_integer),
+    // Array to store the results.  MUST be the same size as the `tests` array.
+    TestResult test_results[3];
+
+      const struct CMUnitTest tests[] = {
+        cmocka_unit_test_prestate(test_allocate_integer_success, &test_results[0]),
+        cmocka_unit_test_prestate(test_allocate_integer_failure,  &test_results[1]),
+        cmocka_unit_test_prestate(test_deallocate_integer,       &test_results[2]),
     };
 
-     //Run Tests and get the number of tests that were run.
-    int num_tests_run = cmocka_run_group_tests(tests, NULL, NULL);
+    // Set test names in our result array *before* running tests.
+    for (size_t i = 0; i < sizeof(tests) / sizeof(tests[0]); i++)
+    {
+        test_results[i].name = tests[i].name;
+    }
 
-    //Now that the tests have been executed, the results are accessible.
-    // Pass these results into the function which will print them in json format
-    generate_json_report(tests, sizeof(tests) / sizeof(tests[0]));
+    // Wrap the tests
+    struct CMUnitTest wrapped_tests[3];
+      for (size_t i = 0; i < sizeof(tests) / sizeof(tests[0]); i++)
+    {
+        wrapped_tests[i] = tests[i];
+        wrapped_tests[i].test_func = test_wrapper;
+    }
+
+
+    int num_tests_run = cmocka_run_group_tests(wrapped_tests, NULL, NULL);
+
+    generate_json_report(test_results, sizeof(test_results) / sizeof(test_results[0]));
 
     return num_tests_run;
 }
