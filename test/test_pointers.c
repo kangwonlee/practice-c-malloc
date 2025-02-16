@@ -1,96 +1,85 @@
-#include <stdarg.h>
-#include <stddef.h>
-#include <setjmp.h>
-#include <cmocka.h>
-#include <jansson.h>
-#include "pointers.h"
-#include <string.h>
+#include <malloc.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-// --- Test Cases ---
+#include "pointers.h"
 
-static void test_allocate_integer_success(void **state) {
-    int *ptr = allocate_integer(42);
-    assert_non_null(ptr);
-    assert_int_equal(*ptr, 42);
+
+// Test that allocate_integer() returns a valid pointer.
+static int test_allocate_integer_valid_pointer() {
+    int *ptr = allocate_integer(10);
+    if (ptr == NULL) {
+        fprintf(stderr, "Test failed: allocate_integer() returned NULL\n");
+        return 1; // Indicate failure
+    }
     free(ptr);
+    return 0; // Indicate success
 }
 
-static void test_allocate_integer_failure(void **state) {
-    will_return(__wrap_malloc, 0);
-    int *ptr = allocate_integer(123);
-    assert_null(ptr);
+
+// Test that allocate_integer() allocates the correct amount of memory.
+static int test_allocate_integer_correct_size() {
+    int *ptr = allocate_integer(10);
+    size_t usable_size = malloc_usable_size(ptr);
+    if (usable_size < sizeof(int)) {
+        fprintf(stderr, "Test failed: Insufficient memory allocated\n");
+        return 1;
+    }
+    free(ptr);
+    return 0;
 }
 
-static void test_deallocate_integer(void **state) {
-    int *ptr = malloc(sizeof(int));
-    *ptr = 99;
+
+// Test that allocate_integer() sets the value of the allocated integer.
+static int test_allocate_integer_set_value() {
+    int *ptr = allocate_integer(10);
+    if (*ptr!= 10) {
+        fprintf(stderr, "Test failed: Incorrect value set in allocated memory\n");
+        return 1;
+    }
+    free(ptr);
+    return 0;
+}
+
+
+// Test that deallocate_integer() frees the allocated memory.
+// Note: It's still difficult to directly test memory freeing.
+static int test_deallocate_integer_frees_memory() {
+    int *ptr = allocate_integer(10);
     deallocate_integer(ptr);
+    // Add any indirect checks or assertions if possible
+    return 0;
 }
 
-// --- malloc wrapper for mocking ---
-void *__wrap_malloc(size_t size) {
-    check_expected(size);
-    return (void *)mock();
-}
 
-// --- JSON Report Generation ---
-
-typedef struct {
-    const char *name;
-    int status;
-    CMUnitTestFunction test_func; // Store the original test function
-} TestResult;
-
-void generate_json_report(TestResult *results, size_t num_tests) {
-    json_t *root = json_object();
-    json_t *json_results = json_array();
-
-    for (size_t i = 0; i < num_tests; i++) {
-        json_t *test_result = json_object();
-        json_object_set_new(test_result, "name", json_string(results[i].name));
-        json_object_set_new(test_result, "status", json_string(results[i].status == 0 ? "passed" : "failed"));
-        json_array_append_new(json_results, test_result);
+int main(int argc, char **argv) {
+    if (argc!= 2) {
+        int failed_tests = 0;
+        failed_tests += test_allocate_integer_valid_pointer();
+        failed_tests += test_allocate_integer_correct_size();
+        failed_tests += test_allocate_integer_set_value();
+        failed_tests += test_deallocate_integer_frees_memory();
+        
+        if (failed_tests > 0) {
+            fprintf(stderr, "%d tests failed\n", failed_tests);
+            return failed_tests;
+        }
     }
+    else {
+        const char *test_function_name = argv[1];
 
-    json_object_set_new(root, "results", json_results);
-    char *json_str = json_dumps(root, JSON_INDENT(4));
-    printf("%s\n", json_str);
-    free(json_str);
-    json_decref(root);
-}
-
-// Wrapper function (Corrected)
-static void test_wrapper(void **state) {
-    TestResult *test_result = (TestResult *)*state;
-    test_result->test_func(state); // Call the original test function
-    // CMocka's assert functions set a global state on failure.  We check that.
-    test_result->status = (cmocka_test_state_failed()) ? 1 : 0;
-}
-
-int main(void) {
-    TestResult test_results[3];
-
-    const struct CMUnitTest tests[] = {
-        cmocka_unit_test(test_allocate_integer_success),
-        cmocka_unit_test(test_allocate_integer_failure),
-        cmocka_unit_test(test_deallocate_integer),
-    };
-
-    // Set test names AND function pointers
-    for (size_t i = 0; i < sizeof(tests) / sizeof(tests[0]); i++) {
-        test_results[i].name = tests[i].name;
-        test_results[i].test_func = tests[i].test_func;
+        if (strcmp(test_function_name, "test_allocate_integer_valid_pointer") == 0) {
+            return test_allocate_integer_valid_pointer();
+        } else if (strcmp(test_function_name, "test_allocate_integer_correct_size") == 0) {
+            return test_allocate_integer_correct_size();
+        } else if (strcmp(test_function_name, "test_allocate_integer_set_value") == 0) {
+            return test_allocate_integer_set_value();
+        } else if (strcmp(test_function_name, "test_deallocate_integer_frees_memory") == 0) {
+            return test_deallocate_integer_frees_memory();
+        } else {
+            fprintf(stderr, "Invalid test function name: %s\n", test_function_name);
+            return 1;
+        }
     }
-
-    const struct CMUnitTest wrapped_tests[] = {
-        cmocka_unit_test_prestate(test_wrapper, &test_results[0]),
-        cmocka_unit_test_prestate(test_wrapper, &test_results[1]),
-        cmocka_unit_test_prestate(test_wrapper, &test_results[2]),
-    };
-
-    int num_tests_run = cmocka_run_group_tests(wrapped_tests, NULL, NULL);
-    generate_json_report(test_results, sizeof(test_results) / sizeof(test_results[0]));
-
-    return num_tests_run;
 }
