@@ -1,6 +1,7 @@
+#include <malloc.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <malloc.h>
+#include <string.h>
 
 #include "pointers.h"
 
@@ -52,18 +53,24 @@ static int test_deallocate_integer_frees_memory() {
 }
 
 
-int main(void) {
-    int failed_tests = 0;
-    failed_tests += test_allocate_integer_valid_pointer();
-    failed_tests += test_allocate_integer_correct_size();
-    failed_tests += test_allocate_integer_set_value();
-    failed_tests += test_deallocate_integer_frees_memory();
-
-    if (failed_tests > 0) {
-        fprintf(stderr, "%d tests failed\n", failed_tests);
+int main(int argc, char **argv) {
+    if (argc!= 2) {
+        fprintf(stderr, "Usage: %s <test_function_name>\n", argv);
         return 1;
+    }
+
+    const char *test_function_name = argv[1];
+
+    if (strcmp(test_function_name, "test_allocate_integer_valid_pointer") == 0) {
+        return test_allocate_integer_valid_pointer();
+    } else if (strcmp(test_function_name, "test_allocate_integer_correct_size") == 0) {
+        return test_allocate_integer_correct_size();
+    } else if (strcmp(test_function_name, "test_allocate_integer_set_value") == 0) {
+        return test_allocate_integer_set_value();
+    } else if (strcmp(test_function_name, "test_deallocate_integer_frees_memory") == 0) {
+        return test_deallocate_integer_frees_memory();
     } else {
-        printf("All tests passed\n");
-        return 0;
+        fprintf(stderr, "Invalid test function name: %s\n", test_function_name);
+        return 1;
     }
 }
