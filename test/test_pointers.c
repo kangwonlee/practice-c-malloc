@@ -1,45 +1,69 @@
-#include <stdarg.h>
-#include <stddef.h>
-#include <setjmp.h>
-#include <cmocka.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <malloc.h>
 
 #include "pointers.h"
 
+
 // Test that allocate_integer() returns a valid pointer.
-static void test_allocate_integer_valid_pointer(void **state) {
+static int test_allocate_integer_valid_pointer() {
     int *ptr = allocate_integer(10);
-    assert_non_null(ptr);
+    if (ptr == NULL) {
+        fprintf(stderr, "Test failed: allocate_integer() returned NULL\n");
+        return 1; // Indicate failure
+    }
     free(ptr);
+    return 0; // Indicate success
 }
+
 
 // Test that allocate_integer() allocates the correct amount of memory.
-static void test_allocate_integer_correct_size(void **state) {
+static int test_allocate_integer_correct_size() {
     int *ptr = allocate_integer(10);
-    assert_int_equal(sizeof(int), _msize(ptr));
+    size_t usable_size = malloc_usable_size(ptr);
+    if (usable_size < sizeof(int)) {
+        fprintf(stderr, "Test failed: Insufficient memory allocated\n");
+        return 1;
+    }
     free(ptr);
+    return 0;
 }
+
 
 // Test that allocate_integer() sets the value of the allocated integer.
-static void test_allocate_integer_set_value(void **state) {
+static int test_allocate_integer_set_value() {
     int *ptr = allocate_integer(10);
-    assert_int_equal(10, *ptr);
+    if (*ptr!= 10) {
+        fprintf(stderr, "Test failed: Incorrect value set in allocated memory\n");
+        return 1;
+    }
     free(ptr);
+    return 0;
 }
+
 
 // Test that deallocate_integer() frees the allocated memory.
-static void test_deallocate_integer_frees_memory(void **state) {
+// Note: It's still difficult to directly test memory freeing.
+static int test_deallocate_integer_frees_memory() {
     int *ptr = allocate_integer(10);
     deallocate_integer(ptr);
-    // Note: It's difficult to directly test that the memory is freed.
-    // This test primarily serves as an example of how to use deallocate_integer().
+    // Add any indirect checks or assertions if possible
+    return 0;
 }
 
+
 int main(void) {
-    const struct CMUnitTest tests = {
-        cmocka_unit_test(test_allocate_integer_valid_pointer),
-        cmocka_unit_test(test_allocate_integer_correct_size),
-        cmocka_unit_test(test_allocate_integer_set_value),
-        cmocka_unit_test(test_deallocate_integer_frees_memory),
-    };
-    return cmocka_run_group_tests(tests, NULL, NULL);
+    int failed_tests = 0;
+    failed_tests += test_allocate_integer_valid_pointer();
+    failed_tests += test_allocate_integer_correct_size();
+    failed_tests += test_allocate_integer_set_value();
+    failed_tests += test_deallocate_integer_frees_memory();
+
+    if (failed_tests > 0) {
+        fprintf(stderr, "%d tests failed\n", failed_tests);
+        return 1;
+    } else {
+        printf("All tests passed\n");
+        return 0;
+    }
 }

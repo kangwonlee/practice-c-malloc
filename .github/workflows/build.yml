@@ -20,8 +20,23 @@ jobs:
         cache-suffix: "uv"
         cache-dependency-glob: "./requirements.txt"
 
-    - name: Install CMocka and Jansson
-      run: sudo apt-get update && sudo apt-get install -y libcmocka-dev libjansson-dev pkg-config valgrind
+    - name: Install valgrind
+      run: sudo apt-get update && sudo apt-get install -y valgrind
+
+    - name: Create venv
+      run: uv venv my_env
+
+    - name: setup environment
+      id: setup
+      run: |
+        source my_env/bin/activate
+        uv pip install -r ./requirements.txt
+
+    - name: list packages
+      id: list_pakcages
+      run: |
+        source my_env/bin/activate
+        uv pip list
 
     - name: Build
       run: cmake . -DCMAKE_BUILD_TYPE=Debug && make
