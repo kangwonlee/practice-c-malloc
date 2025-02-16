@@ -2,7 +2,6 @@ name: Build and Test
 
 on:
   push:
-    branches: [ main ]
   pull_request:
     branches: [ main ]
 
@@ -13,18 +12,32 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install Dependencies (CMocka and Jansson)
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+        enable-cache: true
+        cache-suffix: "uv"
+        cache-dependency-glob: "./requirements.txt"
+
+    - name: Install CMocka and Jansson
       run: sudo apt-get update && sudo apt-get install -y libcmocka-dev libjansson-dev pkg-config valgrind
 
     - name: Build
       run: cmake . -DCMAKE_BUILD_TYPE=Debug && make
 
-    - name: Run Tests
-      run: ./test/my_tests > test_results.json  # Direct JSON output from the test executable
+    - name: Run C Tests
+      run: ./my_tests
+
+    - name: Run Pytest
+      if: always() # Run even if tests fail (for debugging)
+      run: |
+        source my_env/bin/activate
+        pytest --json-report --json-report-indent=4 --json-report-file=test_results.json test/test_pointers.py
 
     - name: Check for Memory Leaks (Optional - using valgrind)
       if: always() # Run even if tests fail (for debugging)
-      run: valgrind --leak-check=full ./test/my_tests
+      run: valgrind --leak-check=full ./my_tests
 
     - name: AI Tutor in English
       uses: kangwonlee/gemini-python-tutor@main
