@@ -6,7 +6,7 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  build-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -54,57 +54,38 @@ jobs:
       if: always() # Run even if tests fail (for debugging)
       run: valgrind --leak-check=full ./my_tests
 
-    - name: AI Tutor in English
-      uses: kangwonlee/gemini-python-tutor@main
-      with:
-        report-files: test_results.json
-        student-files: src/main.c,src/pointers.c,include/pointers.h
-        readme-path: README.md
-        api-key: ${{ secrets.GOOGLE_API_KEY }}
-        explanation-in: English
-      id: ai-tutor-English
-      if: always()
-      timeout-minutes: 2
-
-    - name: AI Tutor in Swedish
-      uses: kangwonlee/gemini-python-tutor@main
-      with:
-        report-files: test_results.json
-        student-files: src/main.c,src/pointers.c,include/pointers.h
-        readme-path: README.md
-        api-key: ${{ secrets.GOOGLE_API_KEY }}
-        explanation-in: Swedish
-      id: ai-tutor-Swedish
-      if: always()
-      timeout-minutes: 2
-
-    - name: AI Tutor in German
-      uses: kangwonlee/gemini-python-tutor@main
-      with:
-        report-files: test_results.json
-        student-files: src/main.c,src/pointers.c,include/pointers.h
-        readme-path: README.md
-        api-key: ${{ secrets.GOOGLE_API_KEY }}
-        explanation-in: German
-      id: ai-tutor-German
-      if: always()
-      timeout-minutes: 2
-
-    - name: AI Tutor in Korean
-      uses: kangwonlee/gemini-python-tutor@main
-      with:
-        report-files: test_results.json
-        student-files: src/main.c,src/pointers.c,include/pointers.h
-        readme-path: README.md
-        api-key: ${{ secrets.GOOGLE_API_KEY }}
-        explanation-in: Korean
-      id: ai-tutor-Korean
-      if: always()
-      timeout-minutes: 2
-
     - name: Upload Test Report
       uses: actions/upload-artifact@v4
       if: always()
       with:
         name: test-report
         path: test_results.json
+
+  ai-tutor:
+    needs: build-test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        language: [English, Korean, "Bahasa Indonesia", Chinese, French, German, Italian, Japanese, Nederlands, Norwegian, Spanish, Swedish, Thai, Vietnamese]
+    if: ${{ always() }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: test-report
+
+      - name: AI Tutor
+        uses: kangwonlee/gemini-python-tutor@main
+        id: ai_tutor
+        with:
+          report-files: test_results.json    # Use the downloaded report file
+          student-files: src/main.c,src/pointers.c,include/pointers.h
+          readme-path: README.md
+          api-key: ${{ secrets.GOOGLE_API_KEY }}
+          explanation-in: ${{ matrix.language }}
+        timeout-minutes: 2
