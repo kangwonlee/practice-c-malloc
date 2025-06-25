@@ -1,6 +1,7 @@
 # begin requirements.txt
 
-pytest
+pytest==8.3.5
 pytest-json-report
+requests==2.32.3
 
 # end requirements.txt
