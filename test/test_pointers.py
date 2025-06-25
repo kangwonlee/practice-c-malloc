@@ -1,3 +1,5 @@
+# begin test/test_pointers.py
+
 import re
 import subprocess
 
@@ -8,6 +10,7 @@ import pytest
 def test_c_syntax():
     # Clean and rebuild
     subprocess.run(["make", "clean"], check=True)
+
     cmake_result = subprocess.run(["cmake", "."], capture_output=True, text=True, check=True)
     make_result = subprocess.run(["make"], capture_output=True, text=True, check=True)
 
@@ -55,3 +58,5 @@ def test_c_functions(test_function):
 
 if __name__ == "__main__":
     pytest.main([__file__])
+
+# end test/test_pointers.py

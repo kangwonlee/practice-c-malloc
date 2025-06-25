@@ -1,3 +1,5 @@
+// begin src/main.c
+
 #include <stdio.h>
 #include "pointers.h"
 
@@ -13,3 +15,5 @@ int main() {
 
     return 0; // Success
 }
+
+// end src/main.c

@@ -1,2 +1,6 @@
+# begin requirements.txt
+
 pytest
 pytest-json-report
+
+# end requirements.txt

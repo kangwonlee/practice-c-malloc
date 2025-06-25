@@ -1,3 +1,5 @@
+// begin src/pointers.c
+
 #include "pointers.h"
 #include <stdlib.h>
 
@@ -16,3 +18,5 @@ void deallocate_integer(int* ptr) {
 }
 
 // ... other pointer-related functions (e.g., array allocation, string manipulation)
+
+// end src/pointers.c
