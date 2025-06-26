@@ -1,4 +1,4 @@
-# begin .github/workflows/build.yml
+# begin .github/workflows/build-test.yml
 
 name: Build and Test
 
@@ -92,4 +92,4 @@ jobs:
           explanation-in: ${{ matrix.language }}
         timeout-minutes: 2
 
-# end .github/workflows/build.yml
+# end .github/workflows/build-test.yml
