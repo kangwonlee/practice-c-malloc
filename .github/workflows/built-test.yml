@@ -14,47 +14,32 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install uv
-      uses: astral-sh/setup-uv@v6
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
       with:
-        version: "latest"
-        enable-cache: true
-        cache-suffix: "uv"
-        cache-dependency-glob: "./requirements.txt"
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Install valgrind
-      run: sudo apt-get update && sudo apt-get install -y valgrind
-
-    - name: Create venv
-      run: uv venv my_env
-
-    - name: setup environment
-      id: setup
+    - name: Set Image URL
+      id: image
       run: |
-        source my_env/bin/activate
-        uv pip install -r ./requirements.txt
+        echo "image_url=ghcr.io/${{ github.repository_owner }}/c-grader:latest" >> $GITHUB_ENV
 
-    - name: list packages
-      id: list_pakcages
+    - name: Pull Grader Image
+      run: docker pull ${{ env.image_url }}
+
+    - name: Run Build and Tests in Container
       run: |
-        source my_env/bin/activate
-        uv pip list
-
-    - name: Build
-      run: cmake . -DCMAKE_BUILD_TYPE=Debug && make
-
-    - name: Run C Tests
-      run: ./my_tests
-
-    - name: Run Pytest
-      if: always() # Run even if tests fail (for debugging)
-      run: |
-        source my_env/bin/activate
-        pytest --json-report --json-report-indent=4 --json-report-file=test_results.json test/test_pointers.py
-
-    - name: Check for Memory Leaks (Optional - using valgrind)
-      if: always() # Run even if tests fail (for debugging)
-      run: valgrind --leak-check=full ./my_tests
+        docker run --rm --user 1001:1001 \
+          --volume ${{ github.workspace }}:/app/workspace \
+          --workdir /tests \
+          ${{ env.image_url }} \
+          /bin/sh -c "
+            cmake . -DCMAKE_BUILD_TYPE=Debug && make &&
+            ./my_tests &&
+            python3 -m pytest --json-report --json-report-indent=4 --json-report-file=/app/workspace/test_results.json test_pointers.py
+          "
 
     - name: Upload Test Report
       uses: actions/upload-artifact@v4
@@ -66,11 +51,6 @@ jobs:
   ai-tutor:
     needs: build-test
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      max-parallel: 4
-      matrix:
-        language: [English, Korean, "Bahasa Indonesia", Chinese, French, German, Italian, Japanese, Nederlands, Norwegian, Spanish, Swedish, Thai, Vietnamese]
     if: ${{ always() }}
     steps:
       - name: Checkout code
@@ -89,7 +69,7 @@ jobs:
           student-files: src/main.c,src/pointers.c,include/pointers.h
           readme-path: README.md
           api-key: ${{ secrets.GOOGLE_API_KEY }}
-          explanation-in: ${{ matrix.language }}
+          explanation-in: Korean
         timeout-minutes: 2
 
 # end .github/workflows/build-test.yml
