@@ -56,6 +56,26 @@ def test_c_functions(test_function):
     # assert "Expected output" in result.stdout
 
 
+def test_memory_leak_valgrind():
+    '''
+    Run the program with Valgrind to check for memory leaks
+    '''
+
+    result = subprocess.run(
+        ["valgrind", "--leak-check=full", "./my_tests"],
+        capture_output=True,
+        text=True,
+    )
+
+    # Check if Valgrind found any memory leaks
+    if "definitely lost: 0 bytes in 0 blocks" not in result.stdout:
+        pytest.fail(f"Memory leak detected:\n{result.stdout}")
+
+    # Optionally, check for other Valgrind errors
+    if "ERROR SUMMARY: 0 errors from 0 contexts" not in result.stdout:
+        pytest.fail(f"Valgrind reported errors:\n{result.stdout}")
+
+
 if __name__ == "__main__":
     pytest.main([__file__])
 
