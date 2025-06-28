@@ -86,6 +86,9 @@ jobs:
       if: always()
       with:
         name: test-report
-        path: ${{ env.results }}
+        path: |
+          ./*.png
+          ./*.json
+          ./feedback.md
 
 # end .github/workflows/build-test.yml
