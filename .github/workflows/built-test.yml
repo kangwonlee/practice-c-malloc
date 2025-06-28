@@ -24,7 +24,7 @@ jobs:
     - name: Set Image URL
       id: image
       run: |
-        echo "image_url=ghcr.io/${{ github.repository_owner }}/c-grader:latest" >> $GITHUB_ENV
+        echo "image_url=${{ vars.CPP_PYTEST_IMAGE_MALLOC }}" >> $GITHUB_ENV
 
     - name: Pull Grader Image
       run: docker pull ${{ env.image_url }}
