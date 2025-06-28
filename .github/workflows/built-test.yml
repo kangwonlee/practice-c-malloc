@@ -21,6 +21,12 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Set Short SHA
+      id: short_sha
+      run: |
+        SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
+        echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
+
     - name: Set Image URL
       id: image
       run: |
@@ -85,7 +91,7 @@ jobs:
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: test-report
+        name: artifacts-${{ env.SHORT_SHA }}
         path: |
           ./*.png
           ./*.json
