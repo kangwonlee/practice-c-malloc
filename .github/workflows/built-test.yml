@@ -59,7 +59,7 @@ jobs:
           --workdir /tests \
           ${{ env.image_url }} \
           /bin/sh -c "
-            cmake . -DCMAKE_BUILD_TYPE=Debug && make &&
+            cmake . -DCMAKE_BUILD_TYPE=Debug -DSTUDENT_DIR=/app/workspace && make &&
             ./my_tests &&
             python3 -m pytest --json-report --json-report-indent=4 --json-report-file=/app/workspace/test_results.json test_pointers.py
           "
