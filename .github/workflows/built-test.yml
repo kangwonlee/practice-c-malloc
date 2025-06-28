@@ -67,6 +67,7 @@ jobs:
           "
 
     - name: Debug JSON Report
+      if: always()
       run: |
         echo "Checking for test_results.json in ${{ github.workspace }}:"
         ls -l ${{ github.workspace }}/test_results.json || echo "test_results.json not found"
