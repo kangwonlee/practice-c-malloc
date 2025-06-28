@@ -36,25 +36,6 @@ jobs:
     - name: Pull Grader Image
       run: docker pull ${{ env.image_url }}
 
-    - name: Debug Container Environment
-      run: |
-        docker run --rm --user 1001:1001 \
-          --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} \
-          --workdir ${{ env.CONTAINER_TESTS }} \
-          ${{ env.image_url }} \
-          /bin/sh -c "
-            echo 'pwd:' &&
-            pwd &&
-            echo 'ls -l ${{ env.CONTAINER_TESTS }}:' &&
-            ls -l &&
-            echo 'Contents of ${{ env.CONTAINER_WORKSPACE }}:' &&
-            ls -l ${{ env.CONTAINER_WORKSPACE }} &&
-            echo 'Contents of ${{ env.CONTAINER_WORKSPACE }}/src:' &&
-            ls -l ${{ env.CONTAINER_WORKSPACE }}/src &&
-            echo 'Contents of ${{ env.CONTAINER_WORKSPACE }}/include:' &&
-            ls -l ${{ env.CONTAINER_WORKSPACE }}/include
-          "
-
     - name: Run Build and Tests in Container
       run: |
         docker run --rm --user 1001:1001 \
