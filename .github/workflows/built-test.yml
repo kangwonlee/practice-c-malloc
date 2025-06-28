@@ -14,6 +14,9 @@ jobs:
     env:
       CONTAINER_WORKSPACE: /app/workspace
       CONTAINER_TESTS: /tests
+      results: test_results.json
+      CONTAINER_SRC: /app/workspace/src
+      C_FILENAME: pointers.c
 
     steps:
     - uses: actions/checkout@v4
@@ -45,16 +48,16 @@ jobs:
           ${{ env.image_url }} \
           /bin/sh -c "
             cmake . -DCMAKE_BUILD_TYPE=Debug -DSTUDENT_DIR=${{ env.CONTAINER_WORKSPACE }} && make &&
-            python3 -m pytest --json-report --json-report-indent=4 --json-report-file=${{ env.CONTAINER_WORKSPACE }}/test_results.json test_pointers.py
+            python3 -m pytest --json-report --json-report-indent=4 --json-report-file=${{ env.CONTAINER_WORKSPACE }}/${{ env.results }} test_pointers.py
           "
 
     - name: Debug JSON Report
       if: always()
       run: |
-        echo "Checking for test_results.json in ${{ github.workspace }}:"
-        ls -l ${{ github.workspace }}/test_results.json || echo "test_results.json not found"
-        if [ -f ${{ github.workspace }}/test_results.json ]; then
-          echo "Contents of test_results.json:"
+        echo "Checking for ${{ env.results }} in ${{ github.workspace }}:"
+        ls -l ${{ github.workspace }}/${{ env.results }} || echo "${{ env.results }} not found"
+        if [ -f ${{ github.workspace }}/${{ env.results }} ]; then
+          echo "Contents of ${{ env.results }}:"
         fi
 
     - name: Upload Test Report
