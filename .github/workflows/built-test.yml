@@ -10,6 +10,9 @@ on:
 jobs:
   build-test:
     runs-on: ubuntu-latest
+    env:
+      CONTAINER_WORKSPACE: /app/workspace
+      CONTAINER_TESTS: /tests
 
     steps:
     - uses: actions/checkout@v4
@@ -36,32 +39,41 @@ jobs:
     - name: Debug Container Environment
       run: |
         docker run --rm --user 1001:1001 \
-          --volume ${{ github.workspace }}:/app/workspace \
-          --workdir /tests \
+          --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} \
+          --workdir ${{ env.CONTAINER_TESTS }} \
           ${{ env.image_url }} \
           /bin/sh -c "
             echo 'pwd:' &&
             pwd &&
-            echo 'ls -l /tests:' &&
+            echo 'ls -l ${{ env.CONTAINER_TESTS }}:' &&
             ls -l &&
-            echo 'Contents of /app/workspace:' &&
-            ls -l /app/workspace &&
-            echo 'Contents of /app/workspace/src:' &&
-            ls -l /app/workspace/src &&
-            echo 'Contents of /app/workspace/include:' &&
-            ls -l /app/workspace/include
+            echo 'Contents of ${{ env.CONTAINER_WORKSPACE }}:' &&
+            ls -l ${{ env.CONTAINER_WORKSPACE }} &&
+            echo 'Contents of ${{ env.CONTAINER_WORKSPACE }}/src:' &&
+            ls -l ${{ env.CONTAINER_WORKSPACE }}/src &&
+            echo 'Contents of ${{ env.CONTAINER_WORKSPACE }}/include:' &&
+            ls -l ${{ env.CONTAINER_WORKSPACE }}/include
           "
 
     - name: Run Build and Tests in Container
       run: |
         docker run --rm --user 1001:1001 \
-          --volume ${{ github.workspace }}:/app/workspace \
-          --workdir /tests \
+          --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} \
+          --workdir ${{ env.CONTAINER_TESTS }} \
           ${{ env.image_url }} \
           /bin/sh -c "
-            cmake . -DCMAKE_BUILD_TYPE=Debug -DSTUDENT_DIR=/app/workspace && make &&
-            python3 -m pytest --json-report --json-report-indent=4 --json-report-file=/app/workspace/test_results.json test_pointers.py
+            cmake . -DCMAKE_BUILD_TYPE=Debug -DSTUDENT_DIR=${{ env.CONTAINER_WORKSPACE }} && make &&
+            python3 -m pytest --json-report --json-report-indent=4 --json-report-file=${{ env.CONTAINER_WORKSPACE }}/test_results.json test_pointers.py
           "
+
+    - name: Debug JSON Report
+      run: |
+        echo "Checking for test_results.json in ${{ github.workspace }}:"
+        ls -l ${{ github.workspace }}/test_results.json || echo "test_results.json not found"
+        if [ -f ${{ github.workspace }}/test_results.json ]; then
+          echo "Contents of test_results.json:"
+          cat ${{ github.workspace }}/test_results.json
+        fi
 
     - name: Upload Test Report
       uses: actions/upload-artifact@v4
@@ -87,7 +99,7 @@ jobs:
         uses: docker://ghcr.io/kangwonlee/gemini-python-tutor:latest
         id: ai_tutor
         with:
-          report-files: test_results.json    # Use the downloaded report file
+          report-files: test_results.json
           student-files: src/main.c,src/pointers.c,include/pointers.h
           readme-path: README.md
           api-key: ${{ secrets.GOOGLE_API_KEY }}
