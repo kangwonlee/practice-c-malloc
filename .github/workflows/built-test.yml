@@ -87,6 +87,11 @@ jobs:
           python3 ai_tutor/entrypoint.py > ./feedback.md
       timeout-minutes: 10
 
+    - name: forward feedback to summary
+      if: always()
+      run: |
+        cat ./feedback.md >> $GITHUB_STEP_SUMMARY
+
     - name: Upload Test Report
       uses: actions/upload-artifact@v4
       if: always()
