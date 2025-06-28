@@ -60,35 +60,32 @@ jobs:
           echo "Contents of ${{ env.results }}:"
         fi
 
+    - name: AI Tutor
+      id: ai-tutor
+      if: always()
+      run: |
+        docker run --rm --user 1001:1001 \
+          --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} \
+          --env INPUT_REPORT-FILES="${{ env.CONTAINER_WORKSPACE }}/${{ env.results }}" \
+          --env INPUT_STUDENT-FILES="${{ env.CONTAINER_SRC }}/${{ env.C_FILENAME }}"\
+          --env INPUT_README-PATH="${{ env.CONTAINER_WORKSPACE }}/README.md" \
+          --env INPUT_CLAUDE_API_KEY="${{ secrets.CLAUDE_API_KEY }}" \
+          --env INPUT_GEMINI-API-KEY="${{ secrets.GOOGLE_API_KEY }}" \
+          --env INPUT_GROK-API-KEY="${{ secrets.XAI_API_KEY }}" \
+          --env INPUT_NVIDIA-API-KEY="${{ secrets.NVIDIA_NIM_API_KEY }}" \
+          --env INPUT_PERPLEXITY-API-KEY="${{ secrets.PERPLEXITY_API_KEY }}" \
+          --env INPUT_GITHUB_REPOSITORY="${{ github.repository }}" \
+          --env INPUT_MODEL="${{ secrets.DEFAULT_MODEL }}" \
+          --env INPUT_EXPLANATION-IN="Korean" \
+          ${{ env.image_url }} \
+          python3 ai_tutor/entrypoint.py > ./feedback.md
+      timeout-minutes: 10
+
     - name: Upload Test Report
       uses: actions/upload-artifact@v4
       if: always()
       with:
         name: test-report
         path: ${{ env.results }}
-
-  ai-tutor:
-    needs: build-test
-    runs-on: ubuntu-latest
-    if: ${{ always() }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: test-report
-
-      - name: AI Tutor
-        uses: docker://ghcr.io/kangwonlee/gemini-python-tutor:latest
-        id: ai_tutor
-        with:
-          report-files: test_results.json
-          student-files: src/main.c,src/pointers.c,include/pointers.h
-          readme-path: README.md
-          api-key: ${{ secrets.GOOGLE_API_KEY }}
-          explanation-in: Korean
-        timeout-minutes: 2
 
 # end .github/workflows/build-test.yml
