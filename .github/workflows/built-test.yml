@@ -82,7 +82,7 @@ jobs:
           --env INPUT_PERPLEXITY-API-KEY="${{ secrets.PERPLEXITY_API_KEY }}" \
           --env INPUT_GITHUB_REPOSITORY="${{ github.repository }}" \
           --env INPUT_MODEL="${{ secrets.DEFAULT_MODEL }}" \
-          --env INPUT_EXPLANATION-IN="Korean" \
+          --env INPUT_EXPLANATION-IN="English" \
           ${{ env.image_url }} \
           python3 ai_tutor/entrypoint.py > ./feedback.md
       timeout-minutes: 10
