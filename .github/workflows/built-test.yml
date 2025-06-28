@@ -73,7 +73,6 @@ jobs:
         ls -l ${{ github.workspace }}/test_results.json || echo "test_results.json not found"
         if [ -f ${{ github.workspace }}/test_results.json ]; then
           echo "Contents of test_results.json:"
-          cat ${{ github.workspace }}/test_results.json
         fi
 
     - name: Upload Test Report
