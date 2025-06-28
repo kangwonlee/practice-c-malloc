@@ -42,10 +42,14 @@ jobs:
           /bin/sh -c "
             echo 'pwd:' &&
             pwd &&
-            echo 'ls -l:' &&
+            echo 'ls -l /tests:' &&
             ls -l &&
             echo 'Contents of /app/workspace:' &&
-            ls -l /app/workspace
+            ls -l /app/workspace &&
+            echo 'Contents of /app/workspace/src:' &&
+            ls -l /app/workspace/src &&
+            echo 'Contents of /app/workspace/include:' &&
+            ls -l /app/workspace/include
           "
 
     - name: Run Build and Tests in Container
