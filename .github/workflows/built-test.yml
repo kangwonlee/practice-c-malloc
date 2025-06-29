@@ -18,6 +18,7 @@ jobs:
       style: check_style.json
       results: test_results.json
       CONTAINER_SRC: /app/workspace/src
+      CONTAINER_INC: /app/workspace/include
       C_FILENAME: pointers.c
 
     steps:
@@ -58,6 +59,7 @@ jobs:
             --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} \
             --workdir ${{ env.CONTAINER_TESTS }} \
             --env STUDENT_SRC_FOLDER=${{ env.CONTAINER_SRC }} \
+            --env C_INCLUDE_PATH=${{ env.CONTAINER_INC }} \
             --env C_FILENAME=${{ env.C_FILENAME }} \
             ${{ env.image_url }} \
             python3 -m pytest --json-report --json-report-indent=4 --json-report-file=${{ env.CONTAINER_WORKSPACE }}/${{ env.build }} test_build.py
