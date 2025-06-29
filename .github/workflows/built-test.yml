@@ -1,0 +1,105 @@
+# begin .github/workflows/build-test.yml
+
+name: Build and Test
+
+on:
+  push:
+  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    env:
+      CONTAINER_WORKSPACE: /app/workspace
+      CONTAINER_TESTS: /tests
+      results: test_results.json
+      CONTAINER_SRC: /app/workspace/src
+      C_FILENAME: pointers.c
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set Short SHA
+      id: short_sha
+      run: |
+        SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7)
+        echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
+
+    - name: Set Image URL
+      id: image
+      run: |
+        echo "image_url=${{ vars.CPP_PYTEST_IMAGE_MALLOC }}" >> $GITHUB_ENV
+
+    - name: Log image URL
+      run: |
+        echo "Using IMAGE_URL: ${{ env.image_url }}"
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.CR_PAT }}
+
+    - name: Pull Grader Image
+      run: docker pull ${{ env.image_url }}
+
+    - name: Run Build and Tests in Container
+      run: |
+        docker run --rm --user 1001:1001 \
+          --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} \
+          --workdir ${{ env.CONTAINER_TESTS }} \
+          ${{ env.image_url }} \
+          /bin/sh -c "
+            cmake . -DCMAKE_BUILD_TYPE=Debug -DSTUDENT_DIR=${{ env.CONTAINER_WORKSPACE }} && make &&
+            python3 -m pytest --json-report --json-report-indent=4 --json-report-file=${{ env.CONTAINER_WORKSPACE }}/${{ env.results }} test_pointers.py
+          "
+
+    - name: Debug JSON Report
+      if: always()
+      run: |
+        echo "Checking for ${{ env.results }} in ${{ github.workspace }}:"
+        ls -l ${{ github.workspace }}/${{ env.results }} || echo "${{ env.results }} not found"
+        if [ -f ${{ github.workspace }}/${{ env.results }} ]; then
+          echo "Contents of ${{ env.results }}:"
+        fi
+
+    - name: AI Tutor
+      id: ai-tutor
+      if: always()
+      run: |
+        docker run --rm --user 1001:1001 \
+          --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} \
+          --env INPUT_REPORT-FILES="${{ env.CONTAINER_WORKSPACE }}/${{ env.results }}" \
+          --env INPUT_STUDENT-FILES="${{ env.CONTAINER_SRC }}/${{ env.C_FILENAME }}"\
+          --env INPUT_README-PATH="${{ env.CONTAINER_WORKSPACE }}/README.md" \
+          --env INPUT_CLAUDE_API_KEY="${{ secrets.CLAUDE_API_KEY }}" \
+          --env INPUT_GEMINI-API-KEY="${{ secrets.GOOGLE_API_KEY }}" \
+          --env INPUT_GROK-API-KEY="${{ secrets.XAI_API_KEY }}" \
+          --env INPUT_NVIDIA-API-KEY="${{ secrets.NVIDIA_NIM_API_KEY }}" \
+          --env INPUT_PERPLEXITY-API-KEY="${{ secrets.PERPLEXITY_API_KEY }}" \
+          --env INPUT_GITHUB_REPOSITORY="${{ github.repository }}" \
+          --env INPUT_MODEL="${{ secrets.DEFAULT_MODEL }}" \
+          --env INPUT_EXPLANATION-IN="English" \
+          ${{ env.image_url }} \
+          python3 ai_tutor/entrypoint.py > ./feedback.md
+      timeout-minutes: 10
+
+    - name: forward feedback to summary
+      if: always()
+      run: |
+        cat ./feedback.md >> $GITHUB_STEP_SUMMARY
+
+    - name: Upload Test Report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: artifacts-${{ env.SHORT_SHA }}
+        path: |
+          ./*.png
+          ./*.json
+          ./feedback.md
+
+# end .github/workflows/build-test.yml
