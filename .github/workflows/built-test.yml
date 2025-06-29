@@ -46,25 +46,24 @@ jobs:
     - name: Pull Grader Image
       run: docker pull ${{ env.image_url }}
 
-    - name: Run Build and Tests in Container
-      run: |
-        docker run --rm --user 1001:1001 \
-          --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} \
-          --workdir ${{ env.CONTAINER_TESTS }} \
-          ${{ env.image_url }} \
-          /bin/sh -c "
-            cmake . -DCMAKE_BUILD_TYPE=Debug -DSTUDENT_DIR=${{ env.CONTAINER_WORKSPACE }} && make &&
-            python3 -m pytest --json-report --json-report-indent=4 --json-report-file=${{ env.CONTAINER_WORKSPACE }}/${{ env.results }} test_pointers.py
-          "
+    - name: test results
+      id: test-results
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: check syntax
+        setup-command: "docker run --rm --user 1001:1001 --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} ${{ env.image_url }} python3 -m pip list"
+        command:       'docker run --rm --user 1001:1001 --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} --workdir ${{ env.CONTAINER_TESTS }} ${{ env.image_url }} /bin/sh -c "cmake . -DCMAKE_BUILD_TYPE=Debug -DSTUDENT_DIR=${{ env.CONTAINER_WORKSPACE }} && make && python3 -m pytest --json-report --json-report-indent=4 --json-report-file=${{ env.CONTAINER_WORKSPACE }}/${{ env.results }} test_pointers.py"' # Run test in container
+        timeout: 2
+        max-score: 5
 
-    - name: Debug JSON Report
-      if: always()
-      run: |
-        echo "Checking for ${{ env.results }} in ${{ github.workspace }}:"
-        ls -l ${{ github.workspace }}/${{ env.results }} || echo "${{ env.results }} not found"
-        if [ -f ${{ github.workspace }}/${{ env.results }} ]; then
-          echo "Contents of ${{ env.results }}:"
-        fi
+    - name: Autograding Reporter
+      uses: classroom-resources/autograding-grading-reporter@v1
+      env:
+        # CHECK-SYNTAX_RESULTS: "${{steps.check-syntax.outputs.result}}"
+        # CHECK-STYLE_RESULTS: "${{steps.check-style.outputs.result}}"
+        TEST-RESULTS_RESULTS: "${{steps.test-results.outputs.result}}"
+      with:
+        runners: test-results # check-syntax,check-style,
 
     - name: AI Tutor
       id: ai-tutor
