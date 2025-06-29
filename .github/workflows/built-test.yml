@@ -79,7 +79,7 @@ jobs:
             --env STUDENT_SRC_FOLDER=${{ env.CONTAINER_SRC }} \
             --env C_FILENAME=${{ env.C_FILENAME }} \
             ${{ env.image_url }} \
-            python3 -m pytest --json-report --json-report-indent=4 --json-report-file=${{ env.CONTAINER_WORKSPACE }}/${{ env.style }} test_style.py
+            python3 -m pytest --json-report --json-report-indent=4 --json-report-file=${{ env.CONTAINER_WORKSPACE }}/${{ env.style }} test_style.py test_commit_msg.py
         timeout: 2
         max-score: 1
 
