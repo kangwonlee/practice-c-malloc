@@ -9,7 +9,7 @@ int *allocate_integer(int value) {
     // Handle allocation failure (e.g., return NULL or exit)
     return NULL; // Or handle differently
   }
-  *ptr = value + 1;  // Introduce an error: add 1 to the value
+  *ptr = value + 1; // Introduce an error: add 1 to the value
   return ptr;
 }
 
