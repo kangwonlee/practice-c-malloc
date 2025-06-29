@@ -46,24 +46,56 @@ jobs:
     - name: Pull Grader Image
       run: docker pull ${{ env.image_url }}
 
-    - name: test results
+    - name: Check Build
+      id: check-build
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: check build
+        command: |
+          docker run --rm --user 1001:1001 \
+            --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} \
+            --workdir ${{ env.CONTAINER_SRC }} \
+            ${{ env.image_url }} \
+            gcc -c ${{ env.C_FILENAME }} -o ${{ env.C_FILENAME }}.o
+        timeout: 2
+        max-score: 2
+
+    - name: Check Style
+      id: check-style
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: check style
+        command: |
+          docker run --rm --user 1001:1001 \
+            --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} \
+            --workdir ${{ env.CONTAINER_SRC }} \
+            ${{ env.image_url }} \
+            clang-format --dry-run --Werror ${{ env.C_FILENAME }}
+        timeout: 2
+        max-score: 1
+
+    - name: Test Results
       id: test-results
       uses: classroom-resources/autograding-command-grader@v1
       with:
-        test-name: check syntax
-        setup-command: "docker run --rm --user 1001:1001 --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} ${{ env.image_url }} python3 -m pip list"
-        command:       'docker run --rm --user 1001:1001 --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} --workdir ${{ env.CONTAINER_TESTS }} ${{ env.image_url }} /bin/sh -c "cmake . -DCMAKE_BUILD_TYPE=Debug -DSTUDENT_DIR=${{ env.CONTAINER_WORKSPACE }} && make && python3 -m pytest --json-report --json-report-indent=4 --json-report-file=${{ env.CONTAINER_WORKSPACE }}/${{ env.results }} test_pointers.py"' # Run test in container
+        test-name: test results
+        command: |
+          docker run --rm --user 1001:1001 \
+            --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} \
+            --workdir ${{ env.CONTAINER_TESTS }} \
+            ${{ env.image_url }} \
+            /bin/sh -c "cmake . -DCMAKE_BUILD_TYPE=Debug -DSTUDENT_DIR=${{ env.CONTAINER_WORKSPACE }} && make && python3 -m pytest --json-report --json-report-indent=4 --json-report-file=${{ env.CONTAINER_WORKSPACE }}/${{ env.results }} test_pointers.py"
         timeout: 2
-        max-score: 5
+        max-score: 2
 
     - name: Autograding Reporter
       uses: classroom-resources/autograding-grading-reporter@v1
       env:
-        # CHECK-SYNTAX_RESULTS: "${{steps.check-syntax.outputs.result}}"
-        # CHECK-STYLE_RESULTS: "${{steps.check-style.outputs.result}}"
+        CHECK-BUILD_RESULTS: "${{steps.check-build.outputs.result}}"
+        CHECK-STYLE_RESULTS: "${{steps.check-style.outputs.result}}"
         TEST-RESULTS_RESULTS: "${{steps.test-results.outputs.result}}"
       with:
-        runners: test-results # check-syntax,check-style,
+        runners: check-build,check-style,test-results
 
     - name: AI Tutor
       id: ai-tutor
