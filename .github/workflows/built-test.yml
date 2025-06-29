@@ -57,8 +57,10 @@ jobs:
           docker run --rm --user 1001:1001 \
             --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} \
             --workdir ${{ env.CONTAINER_SRC }} \
+            --env STUDENT_SRC_FOLDER=${{ env.CONTAINER_SRC }} \
+            --env C_FILENAME=${{ env.C_FILENAME }} \
             ${{ env.image_url }} \
-            gcc -c ${{ env.C_FILENAME }} -o ${{ env.C_FILENAME }}.o > ${{ env.CONTAINER_WORKSPACE }}/${{ env.build }}
+            python3 -m pytest --json-report --json-report-indent=4 --json-report-file=${{ env.CONTAINER_WORKSPACE }}/${{ env.build }} test_build.py
         timeout: 2
         max-score: 2
 
@@ -71,8 +73,10 @@ jobs:
           docker run --rm --user 1001:1001 \
             --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} \
             --workdir ${{ env.CONTAINER_SRC }} \
+            --env STUDENT_SRC_FOLDER=${{ env.CONTAINER_SRC }} \
+            --env C_FILENAME=${{ env.C_FILENAME }} \
             ${{ env.image_url }} \
-            clang-format --dry-run --Werror ${{ env.C_FILENAME }} > ${{ env.CONTAINER_WORKSPACE }}/${{ env.style }}
+            python3 -m pytest --json-report --json-report-indent=4 --json-report-file=${{ env.CONTAINER_WORKSPACE }}/${{ env.style }} test_style.py
         timeout: 2
         max-score: 1
 
