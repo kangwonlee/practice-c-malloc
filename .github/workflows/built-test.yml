@@ -109,7 +109,7 @@ jobs:
       run: |
         docker run --rm --user 1001:1001 \
           --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} \
-          --env INPUT_REPORT-FILES="${{ env.CONTAINER_WORKSPACE }}/${{ env.results }}" \
+          --env INPUT_REPORT-FILES="${{ env.CONTAINER_WORKSPACE }}/${{ env.results }},${{ env.CONTAINER_WORKSPACE }}/${{ env.build }},${{ env.CONTAINER_WORKSPACE }}/${{ env.style }}" \
           --env INPUT_STUDENT-FILES="${{ env.CONTAINER_SRC }}/${{ env.C_FILENAME }}"\
           --env INPUT_README-PATH="${{ env.CONTAINER_WORKSPACE }}/README.md" \
           --env INPUT_CLAUDE_API_KEY="${{ secrets.CLAUDE_API_KEY }}" \
