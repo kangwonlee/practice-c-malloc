@@ -75,6 +75,7 @@ jobs:
           docker run --rm --user 1001:1001 \
             --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} \
             --workdir ${{ env.CONTAINER_TESTS }} \
+            --env GITHUB_WORKSPACE=${{ env.CONTAINER_WORKSPACE }} \
             --env STUDENT_SRC_FOLDER=${{ env.CONTAINER_SRC }} \
             --env C_FILENAME=${{ env.C_FILENAME }} \
             ${{ env.image_url }} \
