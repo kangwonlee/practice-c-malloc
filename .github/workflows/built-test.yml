@@ -14,6 +14,8 @@ jobs:
     env:
       CONTAINER_WORKSPACE: /app/workspace
       CONTAINER_TESTS: /tests
+      build: check_build.json
+      style: check_style.json
       results: test_results.json
       CONTAINER_SRC: /app/workspace/src
       C_FILENAME: pointers.c
@@ -56,7 +58,7 @@ jobs:
             --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} \
             --workdir ${{ env.CONTAINER_SRC }} \
             ${{ env.image_url }} \
-            gcc -c ${{ env.C_FILENAME }} -o ${{ env.C_FILENAME }}.o
+            gcc -c ${{ env.C_FILENAME }} -o ${{ env.C_FILENAME }}.o > ${{ env.CONTAINER_WORKSPACE }}/${{ env.build }}
         timeout: 2
         max-score: 2
 
@@ -70,7 +72,7 @@ jobs:
             --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} \
             --workdir ${{ env.CONTAINER_SRC }} \
             ${{ env.image_url }} \
-            clang-format --dry-run --Werror ${{ env.C_FILENAME }}
+            clang-format --dry-run --Werror ${{ env.C_FILENAME }} > ${{ env.CONTAINER_WORKSPACE }}/${{ env.style }}
         timeout: 2
         max-score: 1
 
