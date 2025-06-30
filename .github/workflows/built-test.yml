@@ -14,8 +14,11 @@ jobs:
     env:
       CONTAINER_WORKSPACE: /app/workspace
       CONTAINER_TESTS: /tests
+      build: check_build.json
+      style: check_style.json
       results: test_results.json
       CONTAINER_SRC: /app/workspace/src
+      CONTAINER_INC: /app/workspace/include
       C_FILENAME: pointers.c
 
     steps:
@@ -46,25 +49,62 @@ jobs:
     - name: Pull Grader Image
       run: docker pull ${{ env.image_url }}
 
-    - name: Run Build and Tests in Container
-      run: |
-        docker run --rm --user 1001:1001 \
-          --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} \
-          --workdir ${{ env.CONTAINER_TESTS }} \
-          ${{ env.image_url }} \
-          /bin/sh -c "
-            cmake . -DCMAKE_BUILD_TYPE=Debug -DSTUDENT_DIR=${{ env.CONTAINER_WORKSPACE }} && make &&
-            python3 -m pytest --json-report --json-report-indent=4 --json-report-file=${{ env.CONTAINER_WORKSPACE }}/${{ env.results }} test_pointers.py
-          "
+    - name: Check Build
+      id: check-build
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: check build
+        command: |
+          docker run --rm --user 1001:1001 \
+            --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} \
+            --workdir ${{ env.CONTAINER_TESTS }} \
+            --env STUDENT_SRC_FOLDER=${{ env.CONTAINER_SRC }} \
+            --env C_INCLUDE_PATH=${{ env.CONTAINER_INC }} \
+            --env C_FILENAME=${{ env.C_FILENAME }} \
+            ${{ env.image_url }} \
+            python3 -m pytest --json-report --json-report-indent=4 --json-report-file=${{ env.CONTAINER_WORKSPACE }}/${{ env.build }} test_build.py
+        timeout: 2
+        max-score: 2
 
-    - name: Debug JSON Report
-      if: always()
-      run: |
-        echo "Checking for ${{ env.results }} in ${{ github.workspace }}:"
-        ls -l ${{ github.workspace }}/${{ env.results }} || echo "${{ env.results }} not found"
-        if [ -f ${{ github.workspace }}/${{ env.results }} ]; then
-          echo "Contents of ${{ env.results }}:"
-        fi
+    - name: Check Style
+      id: check-style
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: check style
+        command: |
+          docker run --rm --user 1001:1001 \
+            --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} \
+            --workdir ${{ env.CONTAINER_TESTS }} \
+            --env GITHUB_WORKSPACE=${{ env.CONTAINER_WORKSPACE }} \
+            --env STUDENT_SRC_FOLDER=${{ env.CONTAINER_SRC }} \
+            --env C_FILENAME=${{ env.C_FILENAME }} \
+            ${{ env.image_url }} \
+            python3 -m pytest --json-report --json-report-indent=4 --json-report-file=${{ env.CONTAINER_WORKSPACE }}/${{ env.style }} test_style.py test_commit_msg.py
+        timeout: 2
+        max-score: 1
+
+    - name: Test Results
+      id: test-results
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: test results
+        command: |
+          docker run --rm --user 1001:1001 \
+            --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} \
+            --workdir ${{ env.CONTAINER_TESTS }} \
+            ${{ env.image_url }} \
+            /bin/sh -c "cmake . -DCMAKE_BUILD_TYPE=Debug -DSTUDENT_DIR=${{ env.CONTAINER_WORKSPACE }} && make && python3 -m pytest --json-report --json-report-indent=4 --json-report-file=${{ env.CONTAINER_WORKSPACE }}/${{ env.results }} test_pointers.py"
+        timeout: 2
+        max-score: 2
+
+    - name: Autograding Reporter
+      uses: classroom-resources/autograding-grading-reporter@v1
+      env:
+        CHECK-BUILD_RESULTS: "${{steps.check-build.outputs.result}}"
+        CHECK-STYLE_RESULTS: "${{steps.check-style.outputs.result}}"
+        TEST-RESULTS_RESULTS: "${{steps.test-results.outputs.result}}"
+      with:
+        runners: check-build,check-style,test-results
 
     - name: AI Tutor
       id: ai-tutor
@@ -72,7 +112,7 @@ jobs:
       run: |
         docker run --rm --user 1001:1001 \
           --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} \
-          --env INPUT_REPORT-FILES="${{ env.CONTAINER_WORKSPACE }}/${{ env.results }}" \
+          --env INPUT_REPORT-FILES="${{ env.CONTAINER_WORKSPACE }}/${{ env.results }},${{ env.CONTAINER_WORKSPACE }}/${{ env.build }},${{ env.CONTAINER_WORKSPACE }}/${{ env.style }}" \
           --env INPUT_STUDENT-FILES="${{ env.CONTAINER_SRC }}/${{ env.C_FILENAME }}"\
           --env INPUT_README-PATH="${{ env.CONTAINER_WORKSPACE }}/README.md" \
           --env INPUT_CLAUDE_API_KEY="${{ secrets.CLAUDE_API_KEY }}" \
