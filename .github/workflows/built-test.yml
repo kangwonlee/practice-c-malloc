@@ -68,7 +68,7 @@ jobs:
         fi
         # chown runner $OUTPUT_FOLDER
         echo "WORKSPACE_OUTPUT=$OUTPUT_FOLDER" >> $GITHUB_ENV
-        echo "CONTAINER_OUTPUT=${{ env.CONTAINER_WORKSPACE }}/$OUTPUT_NAME" >> $GITHUB_ENV
+        echo "CONTAINER_OUTPUT=/$OUTPUT_NAME" >> $GITHUB_ENV
 
     - name: Check Build
       id: check-build
