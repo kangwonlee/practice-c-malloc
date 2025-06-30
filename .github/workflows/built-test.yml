@@ -51,9 +51,24 @@ jobs:
 
     - name: Make output folder for the container
       run: |
-        mkdir ${{ runner.temp }}/output
-        echo "WORKSPACE_OUTPUT=${{ runner.temp }}/output" >> $GITHUB_ENV
-        echo "CONTAINER_OUTPUT=/app/workspace/output" >> $GITHUB_ENV
+        OUTPUT_NAME=output
+        OUTPUT_FOLDER=${{ runner.temp }}/$OUTPUT_NAME
+        mkdir $OUTPUT_FOLDER
+        if [ -d "$OUTPUT_FOLDER" ]; then
+          echo "Folder $OUTPUT_FOLDER exists."
+        else
+          echo "Error: Folder $OUTPUT_FOLDER does not exist."
+          exit 1
+        fi
+        if [ -w "$OUTPUT_FOLDER" ]; then
+          echo "Folder $OUTPUT_FOLDER is writable."
+        else
+          echo "Error: Folder $OUTPUT_FOLDER is not writable."
+          exit 1
+        fi
+        # chown runner $OUTPUT_FOLDER
+        echo "WORKSPACE_OUTPUT=$OUTPUT_FOLDER" >> $GITHUB_ENV
+        echo "CONTAINER_OUTPUT=${{ env.CONTAINER_WORKSPACE }}/$OUTPUT_NAME" >> $GITHUB_ENV
 
     - name: Check Build
       id: check-build
