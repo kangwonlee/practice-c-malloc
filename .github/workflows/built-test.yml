@@ -19,7 +19,7 @@ jobs:
       results: test_results.json
       CONTAINER_SRC: /app/workspace/src
       CONTAINER_INC: /app/workspace/include
-      C_FILENAME: pointers.c
+      C_FILENAME: exercise.c
 
     steps:
     - uses: actions/checkout@v4
@@ -120,7 +120,7 @@ jobs:
             --volume ${{ env.WORKSPACE_OUTPUT }}:${{ env.CONTAINER_OUTPUT }}:rw \
             --workdir ${{ env.CONTAINER_TESTS }} \
             ${{ env.image_url }} \
-            /bin/sh -c "cmake . -DCMAKE_BUILD_TYPE=Debug -DSTUDENT_DIR=${{ env.CONTAINER_WORKSPACE }} && make && python3 -m pytest --json-report --json-report-indent=4 --json-report-file=${{ env.CONTAINER_OUTPUT }}/${{ env.results }} test_pointers.py"
+            /bin/sh -c "cmake . -DCMAKE_BUILD_TYPE=Debug -DSTUDENT_DIR=${{ env.CONTAINER_WORKSPACE }} && make && python3 -m pytest --json-report --json-report-indent=4 --json-report-file=${{ env.CONTAINER_OUTPUT }}/${{ env.results }} test_dynamic.py"
         timeout: 2
         max-score: 2
 

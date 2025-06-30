@@ -1,7 +1,7 @@
 // begin src/main.c
 
 #include <stdio.h>
-#include "pointers.h"
+#include "exercise.h"
 
 int main() {
     int* my_int = allocate_integer(10);

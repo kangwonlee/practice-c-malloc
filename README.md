@@ -14,8 +14,8 @@ Please implement C language dynamic memory management
 
 | folder | file name | description |
 |:-----------:|:-----------:|:-----------:|
-| `src` | `pointers.c` | please implement functions here |
-| `include` | `pointers.h` | please add function prototypes here |
+| `src` | `exercise.c` | please implement functions here |
+| `include` | `exercise.h` | please add function prototypes here |
 
 ``From here is common to all assignments.``
 

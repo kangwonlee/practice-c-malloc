@@ -1,6 +1,6 @@
-// begin src/pointers.c
+// begin src/exercise.c
 
-#include "pointers.h"
+#include "exercise.h"
 #include <stdlib.h>
 
 int *allocate_integer(int value) {
@@ -18,4 +18,4 @@ void deallocate_integer(int *ptr) { free(ptr); }
 // ... other pointer-related functions (e.g., array allocation, string
 // manipulation)
 
-// end src/pointers.c
+// end src/exercise.c
