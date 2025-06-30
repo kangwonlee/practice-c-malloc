@@ -20,6 +20,7 @@ jobs:
       CONTAINER_SRC: /app/workspace/src
       CONTAINER_INC: /app/workspace/include
       C_FILENAME: pointers.c
+      CONTAINER_OUTPUT: /app/workspace/output
 
     steps:
     - uses: actions/checkout@v4
@@ -49,6 +50,11 @@ jobs:
     - name: Pull Grader Image
       run: docker pull ${{ env.image_url }}
 
+    - name: Make output folder for the container
+      run: |
+        mkdir ${{ github.workspace }}/output
+        echo "WORKSPACE_OUTPUT=${{ github.workspace }}/output" >> $GITHUB_ENV
+
     - name: Check Build
       id: check-build
       uses: classroom-resources/autograding-command-grader@v1
@@ -57,13 +63,14 @@ jobs:
         command: |
           docker run --rm --user 1001:1001 \
             --network none \
-            --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} \
+            --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }}:ro \
+            --volume ${{ env.WORKSPACE_OUTPUT }}:${{ env.CONTAINER_OUTPUT }}:rw \
             --workdir ${{ env.CONTAINER_TESTS }} \
             --env STUDENT_SRC_FOLDER=${{ env.CONTAINER_SRC }} \
             --env C_INCLUDE_PATH=${{ env.CONTAINER_INC }} \
             --env C_FILENAME=${{ env.C_FILENAME }} \
             ${{ env.image_url }} \
-            python3 -m pytest --json-report --json-report-indent=4 --json-report-file=${{ env.CONTAINER_WORKSPACE }}/${{ env.build }} test_build.py
+            python3 -m pytest --json-report --json-report-indent=4 --json-report-file=${{ env.CONTAINER_OUTPUT }}/${{ env.build }} test_build.py
         timeout: 2
         max-score: 2
 
@@ -75,13 +82,14 @@ jobs:
         command: |
           docker run --rm --user 1001:1001 \
             --network none \
-            --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} \
+            --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }}:ro \
+            --volume ${{ env.WORKSPACE_OUTPUT }}:${{ env.CONTAINER_OUTPUT }}:rw \
             --workdir ${{ env.CONTAINER_TESTS }} \
             --env GITHUB_WORKSPACE=${{ env.CONTAINER_WORKSPACE }} \
             --env STUDENT_SRC_FOLDER=${{ env.CONTAINER_SRC }} \
             --env C_FILENAME=${{ env.C_FILENAME }} \
             ${{ env.image_url }} \
-            python3 -m pytest --json-report --json-report-indent=4 --json-report-file=${{ env.CONTAINER_WORKSPACE }}/${{ env.style }} test_style.py test_commit_msg.py
+            python3 -m pytest --json-report --json-report-indent=4 --json-report-file=${{ env.CONTAINER_OUTPUT }}/${{ env.style }} test_style.py test_commit_msg.py
         timeout: 2
         max-score: 1
 
@@ -93,10 +101,11 @@ jobs:
         command: |
           docker run --rm --user 1001:1001 \
             --network none \
-            --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} \
+            --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }}:ro \
+            --volume ${{ env.WORKSPACE_OUTPUT }}:${{ env.CONTAINER_OUTPUT }}:rw \
             --workdir ${{ env.CONTAINER_TESTS }} \
             ${{ env.image_url }} \
-            /bin/sh -c "cmake . -DCMAKE_BUILD_TYPE=Debug -DSTUDENT_DIR=${{ env.CONTAINER_WORKSPACE }} && make && python3 -m pytest --json-report --json-report-indent=4 --json-report-file=${{ env.CONTAINER_WORKSPACE }}/${{ env.results }} test_pointers.py"
+            /bin/sh -c "cmake . -DCMAKE_BUILD_TYPE=Debug -DSTUDENT_DIR=${{ env.CONTAINER_WORKSPACE }} && make && python3 -m pytest --json-report --json-report-indent=4 --json-report-file=${{ env.CONTAINER_OUTPUT }}/${{ env.results }} test_pointers.py"
         timeout: 2
         max-score: 2
 
@@ -114,8 +123,9 @@ jobs:
       if: always()
       run: |
         docker run --rm --user 1001:1001 \
-          --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }} \
-          --env INPUT_REPORT-FILES="${{ env.CONTAINER_WORKSPACE }}/${{ env.results }},${{ env.CONTAINER_WORKSPACE }}/${{ env.build }},${{ env.CONTAINER_WORKSPACE }}/${{ env.style }}" \
+          --volume ${{ github.workspace }}:${{ env.CONTAINER_WORKSPACE }}:ro \
+          --volume ${{ env.WORKSPACE_OUTPUT }}:${{ env.CONTAINER_OUTPUT }}:ro \
+          --env INPUT_REPORT-FILES="${{ env.CONTAINER_OUTPUT }}/${{ env.results }},${{ env.CONTAINER_OUTPUT }}/${{ env.build }},${{ env.CONTAINER_OUTPUT }}/${{ env.style }}" \
           --env INPUT_STUDENT-FILES="${{ env.CONTAINER_SRC }}/${{ env.C_FILENAME }}"\
           --env INPUT_README-PATH="${{ env.CONTAINER_WORKSPACE }}/README.md" \
           --env INPUT_CLAUDE_API_KEY="${{ secrets.CLAUDE_API_KEY }}" \
@@ -127,13 +137,13 @@ jobs:
           --env INPUT_MODEL="${{ secrets.DEFAULT_MODEL }}" \
           --env INPUT_EXPLANATION-IN="English" \
           ${{ env.image_url }} \
-          python3 ai_tutor/entrypoint.py > ./feedback.md
+          python3 ai_tutor/entrypoint.py > ${{ env.WORKSPACE_OUTPUT }}/feedback.md
       timeout-minutes: 10
 
     - name: forward feedback to summary
       if: always()
       run: |
-        cat ./feedback.md >> $GITHUB_STEP_SUMMARY
+        cat ${{ env.WORKSPACE_OUTPUT }}/feedback.md >> $GITHUB_STEP_SUMMARY
 
     - name: Upload Test Report
       uses: actions/upload-artifact@v4
@@ -141,8 +151,8 @@ jobs:
       with:
         name: artifacts-${{ env.SHORT_SHA }}
         path: |
-          ./*.png
-          ./*.json
-          ./feedback.md
+          ${{ env.WORKSPACE_OUTPUT }}/*.png
+          ${{ env.WORKSPACE_OUTPUT }}/*.json
+          ${{ env.WORKSPACE_OUTPUT }}/feedback.md
 
 # end .github/workflows/build-test.yml
