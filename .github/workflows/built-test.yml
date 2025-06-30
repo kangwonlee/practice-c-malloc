@@ -20,7 +20,6 @@ jobs:
       CONTAINER_SRC: /app/workspace/src
       CONTAINER_INC: /app/workspace/include
       C_FILENAME: pointers.c
-      CONTAINER_OUTPUT: /app/workspace/output
 
     steps:
     - uses: actions/checkout@v4
@@ -52,8 +51,9 @@ jobs:
 
     - name: Make output folder for the container
       run: |
-        mkdir ${{ github.workspace }}/output
-        echo "WORKSPACE_OUTPUT=${{ github.workspace }}/output" >> $GITHUB_ENV
+        mkdir ${{ runner.temp }}/output
+        echo "WORKSPACE_OUTPUT=${{ runner.temp }}/output" >> $GITHUB_ENV
+        echo "CONTAINER_OUTPUT=/app/workspace/output" >> $GITHUB_ENV
 
     - name: Check Build
       id: check-build
