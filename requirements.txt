@@ -1,6 +1,6 @@
 # begin requirements.txt
 
-pytest==8.3.5
+pytest==9.0.3
 pytest-json-report==1.5.0
 pytest-xdist==3.6.1
 requests==2.32.4
